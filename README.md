@@ -18,3 +18,6 @@
     - MSV_CommonVoice_data
         - metadata
     - MSV_Youtube_data
+
+> **Note:** 
+- /temporary/ : This folder contains all temporary files and will be deleted when releasing. 
