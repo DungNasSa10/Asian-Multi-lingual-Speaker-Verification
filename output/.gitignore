@@ -1,2 +1,6 @@
 # Trained model checkpoints
 model*
+
+# data statistics
+data_stat.*
+
