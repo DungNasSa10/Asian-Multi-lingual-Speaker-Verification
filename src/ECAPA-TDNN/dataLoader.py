@@ -2,7 +2,7 @@
 DataLoader for training
 '''
 
-import glob, numpy, os, random, soundfile, torch
+import glob, numpy, os, random, soundfile, torch, librosa
 from scipy import signal
 
 class train_loader(object):
@@ -16,9 +16,10 @@ class train_loader(object):
 		self.noiselist = {}
 		augment_files   = glob.glob(os.path.join(musan_path,'*/*/*/*.wav'))
 		for file in augment_files:
-			if file.split('/')[-4] not in self.noiselist:
-				self.noiselist[file.split('/')[-4]] = []
-			self.noiselist[file.split('/')[-4]].append(file)
+			if file.split('/')[-3] not in self.noiselist:
+				self.noiselist[file.split('/')[-3]] = []
+			self.noiselist[file.split('/')[-3]].append(file)
+
 		self.rir_files  = glob.glob(os.path.join(rir_path,'*/*/*.wav'))
 		# Load data & labels
 		self.data_list  = []
@@ -44,7 +45,7 @@ class train_loader(object):
 		audio = audio[start_frame:start_frame + length]
 		audio = numpy.stack([audio],axis=0)
 		# Data Augmentation
-		augtype = 0 #random.randint(0,5)
+		augtype = random.randint(0,5)
 		if augtype == 0:   # Original
 			audio = audio
 		elif augtype == 1: # Reverberation
@@ -65,8 +66,8 @@ class train_loader(object):
 
 	def add_rev(self, audio):
 		rir_file    = random.choice(self.rir_files)
-		rir, sr     = soundfile.read(rir_file)
-		rir         = numpy.expand_dims(rir.astype(numpy.float),0)
+		rir, sr     = librosa.load(rir_file, sr=None, mono=True)
+		rir         = numpy.expand_dims(rir.astype(numpy.float64),0)
 		rir         = rir / numpy.sqrt(numpy.sum(rir**2))
 		return signal.convolve(audio, rir, mode='full')[:,:self.num_frames * 160 + 240]
 
