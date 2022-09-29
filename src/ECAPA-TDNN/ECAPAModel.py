@@ -5,7 +5,7 @@ This part is used to train the speaker model and evaluate the performances
 import torch, sys, os, tqdm, numpy, soundfile, time, pickle
 import torch.nn as nn
 from tools import *
-from loss import AAMsoftmax
+from loss import AAMsoftmax, AngleProto
 from model import ECAPA_TDNN
 
 class ECAPAModel(nn.Module):
@@ -22,7 +22,7 @@ class ECAPAModel(nn.Module):
 
 	def train_network(self, epoch, loader):
 		self.train()
-		## Update the learning rate based on the current epcoh
+		## Update the learning rate based on the current epoch
 		self.scheduler.step(epoch - 1)
 		index, top1, loss = 0, 0, 0
 		lr = self.optim.param_groups[0]['lr']

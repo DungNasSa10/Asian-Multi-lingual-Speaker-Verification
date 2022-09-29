@@ -6,3 +6,4 @@ scipy
 tqdm
 soundfile
 scikit-learn
+librosa
