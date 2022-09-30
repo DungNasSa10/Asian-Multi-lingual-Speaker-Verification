@@ -5,6 +5,7 @@ import tools
 import argparse, glob, os, torch, warnings, time
 import numpy as np
 import soundfile
+import random
 from sklearn.metrics.pairwise import cosine_similarity
 
 parser = argparse.ArgumentParser(description = "OPTICS_clustering")
@@ -19,13 +20,7 @@ parser.add_argument('--initial_model',  type=str,   default="",  help='Path of t
 parser.add_argument('--all',    dest='all', action='store_true', help='All the file in youtube or cluster in each vid ')
 
 #Ecapa model 
-parser.add_argument('--test_step',  type=int,   default=1,       help='Test and save every [test_step] epochs')
-parser.add_argument('--lr',         type=float, default=0.001,   help='Learning rate')
-parser.add_argument("--lr_decay",   type=float, default=0.97,    help='Learning rate decay every [test_step] epochs')
-parser.add_argument('--C',       type=int,   default=1024,   help='Channel size for the speaker encoder')
-parser.add_argument('--m',       type=float, default=0.2,    help='Loss margin in AAM softmax')
-parser.add_argument('--s',       type=float, default=30,     help='Loss scale in AAM softmax')
-parser.add_argument('--n_class', type=int,   default=5994,   help='Number of speakers')
+
 parser.add_argument('--save_path',  type=str,   default="",  help='')
 
 
@@ -38,7 +33,7 @@ args = tools.init_args(args)
 
 clust = OPTICS( metric='cosine', eps=args.eps, min_cluster_size=args.min_cluster_size, n_jobs=args.n_cpu)
 
-s = ECAPAModel(**vars(args))
+s = ECAPAModel( 0.001, 0.97, 1024 , 2345, 0.2, 30, 1)
 s.load_parameters(args.initial_model)
 s.eval()
 if args.all:
@@ -61,58 +56,62 @@ if args.all:
 
 
 else:
-  youtube_list_path = os.listdir(args.youtube_path) 
+  print('still in developing process')
+  # youtube_list_path = os.listdir(args.youtube_path) 
 
-  vid_audio = []
-  vid_embedding = []
-  vid_cluster = []
-  for vid in youtube_list_path:
-    embeddings = []
-    audio_list = [str(vid)+'/'+str(i) for i in os.listdir(args.youtube_path+'/'+vid)]
-    for audio_path in audio_list:
-      audio,_ = soundfile.read(args.youtube_path+'/'+audio_path)
-      audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
-      embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
-      # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
-      embeddings.append(embedding)
-    cluster = clust.fit_predict(embeddings)
-    vid_audio.append(audio_list)
-    vid_embedding.append(embeddings)
-    vid_cluster.append(cluster)
-  print(vid_cluster)
+  # vid_audio = []
+  # vid_embedding = []
+  # vid_cluster = []
+  # for vid in youtube_list_path:
+  #   embeddings = []
+  #   audio_list = [str(vid)+'/'+str(i) for i in os.listdir(args.youtube_path+'/'+vid)]
+  #   for audio_path in audio_list:
+  #     audio,_ = soundfile.read(args.youtube_path+'/'+audio_path)
+  #     audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
+  #     embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
+  #     # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
+  #     embeddings.append(embedding)
+  #   cluster = clust.fit_predict(embeddings)
+  #   vid_audio.append(audio_list)
+  #   vid_embedding.append(embeddings)
+  #   vid_cluster.append(cluster)
+  # print(vid_cluster)
 
-  speaker_dict={}
-  for index in range(len(vid_audio)):
-    for i in range(len(vid_cluster[index])):
-      if vid_cluster[index][i] != -1:
-        if str(index)+'-'+str(vid_cluster[index][i]) not in speaker_dict.keys():
-          speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] = [(vid_embedding[index][i],vid_audio[index][i])]
-        else:
-          speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] += [(vid_embedding[index][i],vid_audio[index][i])]
+  # speaker_dict={}
+  # for index in range(len(vid_audio)):
+  #   for i in range(len(vid_cluster[index])):
+  #     if vid_cluster[index][i] != -1:
+  #       if str(index)+'-'+str(vid_cluster[index][i]) not in speaker_dict.keys():
+  #         speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] = [(vid_embedding[index][i],vid_audio[index][i])]
+  #       else:
+  #         speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] += [(vid_embedding[index][i],vid_audio[index][i])]
     
 
-  # for i in range(len(speaker_dict)):
-  #   print(str(list(speaker_dict.keys())[i])+ '\t' + str([i[1] for i in list(speaker_dict.values())[i]]))
+  # # for i in range(len(speaker_dict)):
+  # #   print(str(list(speaker_dict.keys())[i])+ '\t' + str([i[1] for i in list(speaker_dict.values())[i]]))
 
-  checking_ind = list(range(len(speaker_dict.keys())))
-  clusters = {}
-  for i in range(len(speaker_dict.keys())):
-    # print(i/len(speaker_dict.keys()))
-    if i not in checking_ind:
-      continue
-    clusters[list(speaker_dict.keys())[i]] = speaker_dict[list(speaker_dict.keys())[i]]
-    for j in range(i+1, len(speaker_dict.keys())):
-      if j not in checking_ind:
-        continue
-      score = cosine_similarity([speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]], \
-                             [speaker_embed[0] for speaker_embed in list(speaker_dict.values())[j]])
-      if score.mean() >= args.thres:
-        checking_ind.remove(j)
-        clusters[list(speaker_dict.keys())[i]] += speaker_dict[list(speaker_dict.keys())[j]]
+  # checking_ind = list(range(len(speaker_dict.keys())))
+  # clusters = {}
+  # for i in range(len(speaker_dict.keys())):
+  #   # print(i/len(speaker_dict.keys()))
+  #   if i not in checking_ind:
+  #     continue
+  #   clusters[list(speaker_dict.keys())[i]] = speaker_dict[list(speaker_dict.keys())[i]]
+  #   for j in range(i+1, len(speaker_dict.keys())):
+  #     if j not in checking_ind:
+  #       continue
+  #     score = cosine_similarity([speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]], \
+  #                            [speaker_embed[0] for speaker_embed in list(speaker_dict.values())[j]])
+  #     if score.mean() >= args.thres:
+  #       checking_ind.remove(j)
+  #       clusters[list(speaker_dict.keys())[i]] += speaker_dict[list(speaker_dict.keys())[j]]
 
+shuffle_list = []
 with open(args.save_file, 'w') as f:
   for i in range(len(clusters)):
     for j in list(clusters.values())[i]:
-     f.write(str(list(clusters.keys())[i])+ '\t' + str(j[1])+'\n')
-
+      shuffle_list.append((list(clusters.keys())[i],j[1]))
+  random.shuffle(shuffle_list)
+  for i in range(len(shuffle_list)):
+    f.write(str(shuffle_list[i][0])+ '\t' + str(shuffle_list[i][1])+'\n')
 

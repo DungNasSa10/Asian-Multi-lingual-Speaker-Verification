@@ -1,7 +1,3 @@
-'''
-AAMsoftmax loss function copied from voxceleb_trainer: https://github.com/clovaai/voxceleb_trainer/blob/master/loss/aamsoftmax.py
-'''
-
 import torch, math
 import torch.nn as nn
 import torch.nn.functional as F
@@ -40,7 +36,7 @@ class AAMsoftmax(nn.Module):
 
 class AngleProto(nn.Module):
 
-    def __init__(self, init_w=10.0, init_b=-5.0, **kwargs):
+    def __init__(self, init_w=3.0, init_b=-5.0, **kwargs):
         super(AngleProto, self).__init__()
 
         self.test_normalize = True

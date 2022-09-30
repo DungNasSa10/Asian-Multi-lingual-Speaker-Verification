@@ -45,20 +45,15 @@ class train_loader(object):
 		audio = audio[start_frame:start_frame + length]
 		audio = numpy.stack([audio],axis=0)
 		# Data Augmentation
-		augtype = random.randint(0,5)
+		augtype = random.randint(0,3)
 		if augtype == 0:   # Original
 			audio = audio
 		elif augtype == 1: # Reverberation
 			audio = self.add_rev(audio)
-		elif augtype == 2: # Babble
-			audio = self.add_noise(audio, 'speech')
-		elif augtype == 3: # Music
+		elif augtype == 2: # Music
 			audio = self.add_noise(audio, 'music')
-		elif augtype == 4: # Noise
+		elif augtype == 3: # Noise
 			audio = self.add_noise(audio, 'noise')
-		elif augtype == 5: # Television noise
-			audio = self.add_noise(audio, 'speech')
-			audio = self.add_noise(audio, 'music')
 		return torch.FloatTensor(audio[0]), self.data_label[index]
 
 	def __len__(self):
@@ -90,3 +85,6 @@ class train_loader(object):
 			noises.append(numpy.sqrt(10 ** ((clean_db - noise_db - noisesnr) / 10)) * noiseaudio)
 		noise = numpy.sum(numpy.concatenate(noises,axis=0),axis=0,keepdims=True)
 		return noise + audio
+
+	def pin_memmory(self):
+		return self

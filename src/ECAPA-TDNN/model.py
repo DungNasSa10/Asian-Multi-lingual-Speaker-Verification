@@ -1,12 +1,3 @@
-'''
-This is the ECAPA-TDNN model.
-This model is modified and combined based on the following three projects:
-  1. https://github.com/clovaai/voxceleb_trainer/issues/86
-  2. https://github.com/lawlict/ECAPA-TDNN/blob/master/ecapa_tdnn.py
-  3. https://github.com/speechbrain/speechbrain/blob/96077e9a1afff89d3f5ff47cab4bca0202770e4f/speechbrain/lobes/models/ECAPA_TDNN.py
-
-'''
-
 import math, torch, torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
