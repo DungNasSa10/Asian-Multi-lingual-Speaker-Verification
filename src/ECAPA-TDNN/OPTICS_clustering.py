@@ -57,54 +57,54 @@ if args.all:
 
 else:
   print('still in developing process')
-  # youtube_list_path = os.listdir(args.youtube_path) 
+  youtube_list_path = os.listdir(args.youtube_path) 
 
-  # vid_audio = []
-  # vid_embedding = []
-  # vid_cluster = []
-  # for vid in youtube_list_path:
-  #   embeddings = []
-  #   audio_list = [str(vid)+'/'+str(i) for i in os.listdir(args.youtube_path+'/'+vid)]
-  #   for audio_path in audio_list:
-  #     audio,_ = soundfile.read(args.youtube_path+'/'+audio_path)
-  #     audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
-  #     embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
-  #     # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
-  #     embeddings.append(embedding)
-  #   cluster = clust.fit_predict(embeddings)
-  #   vid_audio.append(audio_list)
-  #   vid_embedding.append(embeddings)
-  #   vid_cluster.append(cluster)
-  # print(vid_cluster)
+  vid_audio = []
+  vid_embedding = []
+  vid_cluster = []
+  for vid in youtube_list_path:
+    embeddings = []
+    audio_list = [str(vid)+'/'+str(i) for i in os.listdir(args.youtube_path+'/'+vid)]
+    for audio_path in audio_list:
+      audio,_ = soundfile.read(args.youtube_path+'/'+audio_path)
+      audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
+      embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
+      # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
+      embeddings.append(embedding)
+    cluster = clust.fit_predict(embeddings)
+    vid_audio.append(audio_list)
+    vid_embedding.append(embeddings)
+    vid_cluster.append(cluster)
+  print(vid_cluster)
 
-  # speaker_dict={}
-  # for index in range(len(vid_audio)):
-  #   for i in range(len(vid_cluster[index])):
-  #     if vid_cluster[index][i] != -1:
-  #       if str(index)+'-'+str(vid_cluster[index][i]) not in speaker_dict.keys():
-  #         speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] = [(vid_embedding[index][i],vid_audio[index][i])]
-  #       else:
-  #         speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] += [(vid_embedding[index][i],vid_audio[index][i])]
+  speaker_dict={}
+  for index in range(len(vid_audio)):
+    for i in range(len(vid_cluster[index])):
+      if vid_cluster[index][i] != -1:
+        if str(index)+'-'+str(vid_cluster[index][i]) not in speaker_dict.keys():
+          speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] = [(vid_embedding[index][i],vid_audio[index][i])]
+        else:
+          speaker_dict[str(index)+'-'+str(vid_cluster[index][i])] += [(vid_embedding[index][i],vid_audio[index][i])]
     
 
-  # # for i in range(len(speaker_dict)):
-  # #   print(str(list(speaker_dict.keys())[i])+ '\t' + str([i[1] for i in list(speaker_dict.values())[i]]))
+  # for i in range(len(speaker_dict)):
+  #   print(str(list(speaker_dict.keys())[i])+ '\t' + str([i[1] for i in list(speaker_dict.values())[i]]))
 
-  # checking_ind = list(range(len(speaker_dict.keys())))
-  # clusters = {}
-  # for i in range(len(speaker_dict.keys())):
-  #   # print(i/len(speaker_dict.keys()))
-  #   if i not in checking_ind:
-  #     continue
-  #   clusters[list(speaker_dict.keys())[i]] = speaker_dict[list(speaker_dict.keys())[i]]
-  #   for j in range(i+1, len(speaker_dict.keys())):
-  #     if j not in checking_ind:
-  #       continue
-  #     score = cosine_similarity([speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]], \
-  #                            [speaker_embed[0] for speaker_embed in list(speaker_dict.values())[j]])
-  #     if score.mean() >= args.thres:
-  #       checking_ind.remove(j)
-  #       clusters[list(speaker_dict.keys())[i]] += speaker_dict[list(speaker_dict.keys())[j]]
+  checking_ind = list(range(len(speaker_dict.keys())))
+  clusters = {}
+  for i in range(len(speaker_dict.keys())):
+    # print(i/len(speaker_dict.keys()))
+    if i not in checking_ind:
+      continue
+    clusters[list(speaker_dict.keys())[i]] = speaker_dict[list(speaker_dict.keys())[i]]
+    for j in range(i+1, len(speaker_dict.keys())):
+      if j not in checking_ind:
+        continue
+      score = cosine_similarity([speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]], \
+                             [speaker_embed[0] for speaker_embed in list(speaker_dict.values())[j]])
+      if score.mean() >= args.thres:
+        checking_ind.remove(j)
+        clusters[list(speaker_dict.keys())[i]] += speaker_dict[list(speaker_dict.keys())[j]]
 
 shuffle_list = []
 with open(args.save_file, 'w') as f:
