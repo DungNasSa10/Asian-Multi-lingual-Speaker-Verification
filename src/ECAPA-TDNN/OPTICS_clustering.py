@@ -1,4 +1,5 @@
 from sklearn.cluster import OPTICS
+from sklearn.mixture import GaussianMixture
 from ECAPAModel import ECAPAModel
 import torch.nn.functional as F
 import tools 
@@ -18,8 +19,7 @@ parser.add_argument('--thres',      type=float,   default=0.7,       help='thres
 parser.add_argument('--eps',         type=float, default=0.2,   help='max distance for a cluster')
 parser.add_argument('--initial_model',  type=str,   default="",  help='Path of the initial_model')
 parser.add_argument('--all',    dest='all', action='store_true', help='All the file in youtube or cluster in each vid ')
-
-#Ecapa model 
+parser.add_argument('--n_components', type=int,   default=3,     help='number of cluster for gmm ')
 
 parser.add_argument('--save_path',  type=str,   default="",  help='')
 
@@ -32,6 +32,7 @@ args = tools.init_args(args)
 
 
 clust = OPTICS( metric='cosine', eps=args.eps, min_cluster_size=args.min_cluster_size, n_jobs=args.n_cpu)
+clust2 = GaussianMixture(n_components = args.n_components)
 
 s = ECAPAModel( 0.001, 0.97, 1024 , 2345, 0.2, 30, 1)
 s.load_parameters(args.initial_model)
@@ -71,11 +72,14 @@ else:
       embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
       # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
       embeddings.append(embedding)
-    cluster = clust.fit_predict(embeddings)
+    try:
+      cluster = clust2.fit_predict(embeddings)
+    except Exception:
+      print(vid)
+      continue
     vid_audio.append(audio_list)
     vid_embedding.append(embeddings)
     vid_cluster.append(cluster)
-  print(vid_cluster)
 
   speaker_dict={}
   for index in range(len(vid_audio)):
@@ -93,7 +97,19 @@ else:
   checking_ind = list(range(len(speaker_dict.keys())))
   clusters = {}
   for i in range(len(speaker_dict.keys())):
+    if i == len(speaker_dict.keys()):
+      break
     # print(i/len(speaker_dict.keys()))
+    # Invalid Speaker Removal
+    invalid_sm = cosine_similarity([speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]], \
+                             [speaker_embed[0] for speaker_embed in list(speaker_dict.values())[i]])
+    if np.min(invalid_sm) < 0.5:
+      speaker_dict.pop(list(speaker_dict.keys())[i])
+
+
+  for i in range(len(speaker_dict.keys())):
+    # print(i/len(speaker_dict.keys()))
+    # Invalid Speaker Removal
     if i not in checking_ind:
       continue
     clusters[list(speaker_dict.keys())[i]] = speaker_dict[list(speaker_dict.keys())[i]]
@@ -114,4 +130,3 @@ with open(args.save_file, 'w') as f:
   random.shuffle(shuffle_list)
   for i in range(len(shuffle_list)):
     f.write(str(shuffle_list[i][0])+ '\t' + str(shuffle_list[i][1])+'\n')
-
