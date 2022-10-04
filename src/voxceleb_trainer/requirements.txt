@@ -1,0 +1,9 @@
+torch
+torchaudio
+asteroid-filterbanks
+numpy
+scipy
+scikit-learn
+tqdm
+pyyaml
+soundfile
