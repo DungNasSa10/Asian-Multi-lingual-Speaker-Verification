@@ -1,6 +1,6 @@
 from sklearn.cluster import OPTICS
 from sklearn.mixture import GaussianMixture
-from ECAPAModel import ECAPAModel
+from SpeakerNet import SpeakerNet
 import torch.nn.functional as F
 import tools 
 import argparse, glob, os, torch, warnings, time
@@ -12,6 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 parser = argparse.ArgumentParser(description = "OPTICS_clustering")
 #Argument setting
 parser.add_argument('--youtube_path',  type=str,   default="",  help='Path of youtube data')
+parser.add_argument('--config',         type=str,   default=None,   help='Config YAML file')
 parser.add_argument('--save_file',  type=str,   default="",  help='Path of save file for new labeled data')
 parser.add_argument('--min_cluster_size', type=int,   default=3,     help='min point of a cluster ')
 parser.add_argument('--n_cpu',      type=int,   default=4,       help='Number of loader threads')
@@ -34,8 +35,9 @@ args = tools.init_args(args)
 clust = OPTICS( metric='cosine', eps=args.eps, min_cluster_size=args.min_cluster_size, n_jobs=args.n_cpu)
 clust2 = GaussianMixture(n_components = args.n_components)
 
-s = ECAPAModel( 0.001, 0.97, 1024 , 2345, 0.2, 30, 1)
-s.load_parameters(args.initial_model)
+n = SpeakerNet(**var(args))
+s = ModelTrainer(n, **var(args))
+s.loadParameters(args.initial_model)
 s.eval()
 if args.all:
   embeddings = []
@@ -43,7 +45,7 @@ if args.all:
   for audio_path in youtube_list_path:
     audio,_ = soundfile.read(audio_path)
     audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
-    embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
+    embedding = s.__model__.__S__.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
     embeddings.append(embedding)
   cluster = clust.fit_predict(embeddings)
   print(cluster)
@@ -69,7 +71,7 @@ else:
     for audio_path in audio_list:
       audio,_ = soundfile.read(args.youtube_path+'/'+audio_path)
       audio = torch.FloatTensor(np.stack([audio],axis=0)).cuda()
-      embedding = s.speaker_encoder.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
+      embedding = s.__model__.__S__.forward(audio, aug = False).squeeze(0).detach().cpu().numpy()
       # embedding = F.normalize(embedding, p=2, dim=1).squeeze(0).detach().cpu().numpy()
       embeddings.append(embedding)
     try:
