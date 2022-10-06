@@ -31,6 +31,23 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 args = parser.parse_args()
 args = tools.init_args(args)
 
+## Parse YAML
+def find_option_type(key, parser):
+    for opt in parser._get_optional_actions():
+        if ('--' + key) in opt.option_strings:
+           return opt.type
+    raise ValueError
+
+if args.config is not None:
+    with open(args.config, "r") as f:
+        yml_config = yaml.load(f, Loader=yaml.FullLoader)
+    for k, v in yml_config.items():
+        if k in args.__dict__:
+            typ = find_option_type(k, parser)
+            args.__dict__[k] = typ(v)
+        else:
+            sys.stderr.write("Ignored unknown parameter {} in yaml.\n".format(k))
+
 
 clust = OPTICS( metric='cosine', eps=args.eps, min_cluster_size=args.min_cluster_size, n_jobs=args.n_cpu)
 clust2 = GaussianMixture(n_components = args.n_components)
