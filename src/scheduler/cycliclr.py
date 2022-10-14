@@ -3,7 +3,7 @@ from torch.optim.lr_scheduler import CyclicLR
 
 def Scheduler(optimizer, step_size_up, step_size_down, cyclic_mode, **kwargs):
 
-	sche_fn = CyclicLR(optimizer, base_lr=0.00001, max_lr=0.01, step_size_up=step_size_up, step_size_down=step_size_down, mode=cyclic_mode)
+	sche_fn = CyclicLR(optimizer, base_lr=1e-5, max_lr=0.001, step_size_up=step_size_up, step_size_down=step_size_down, mode=cyclic_mode, cycle_momentum=False)
 
 	lr_step = 'epoch'
 

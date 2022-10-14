@@ -2,13 +2,11 @@
 #-*- coding: utf-8 -*-
 
 import sys, time, os, argparse
+from sklearn.utils import shuffle
 import yaml
-import numpy
 import torch
 import glob
-import zipfile
 import warnings
-import datetime
 from tuneThreshold import *
 from SpeakerNet import *
 from DatasetLoader import *
@@ -41,12 +39,12 @@ parser.add_argument('--trainfunc',      type=str,   default="",     help='Loss f
 ## Optimizer
 parser.add_argument('--optimizer',      type=str,   default="adam", help='sgd or adam')
 parser.add_argument('--scheduler',      type=str,   default="steplr", help='Learning rate scheduler')
-parser.add_argument('--lr',             type=float, default=0.001,  help='Learning rate')
+parser.add_argument('--lr',             type=float, default=0.0005,  help='Learning rate')
 parser.add_argument("--lr_decay",       type=float, default=0.95,   help='Learning rate decay every [lr_step] epochs')
-parser.add_argument('--weight_decay',   type=float, default=0,      help='Weight decay in the optimizer')
+parser.add_argument('--weight_decay',   type=float, default=2e-5,      help='Weight decay in the optimizer')
 parser.add_argument('--lr_step',        type=int,   default=2,      help='Step for learning rate decay')
-parser.add_argument('--step_size_up',   type=int,   default=6500,   help='step_size_up of CyclicLR')
-parser.add_argument('--step_size_down',   type=int, default=8500,   help='step_size_down of CyclicLR')
+parser.add_argument('--step_size_up',   type=int,   default=20000,   help='step_size_up of CyclicLR')
+parser.add_argument('--step_size_down',   type=int, default=20000,   help='step_size_down of CyclicLR')
 parser.add_argument('--cyclic_mode',    type=str,   default='triangular2', help='policy of CyclicLR')
 
 ## Loss functions
@@ -55,7 +53,7 @@ parser.add_argument("--hard_rank",      type=int,   default=10,     help='Hard n
 parser.add_argument('--margin',         type=float, default=0.2,    help='Loss margin, only for some loss functions')
 parser.add_argument('--scale',          type=float, default=30,     help='Loss scale, only for some loss functions')
 parser.add_argument('--nPerSpeaker',    type=int,   default=1,      help='Number of utterances per speaker per batch, only for metric learning based losses')
-parser.add_argument('--nClasses',       type=int,   default=5994,   help='Number of speakers in the softmax layer, only for softmax-based losses')
+parser.add_argument('--nClasses',       type=int,   default=17714,   help='Number of speakers in the softmax layer, only for softmax-based losses')
 
 ## Evaluation parameters
 parser.add_argument('--dcf_p_target',   type=float, default=0.05,   help='A priori probability of the specified target speaker')
@@ -67,12 +65,13 @@ parser.add_argument('--initial_model',  type=str,   default="",     help='Initia
 parser.add_argument('--save_path',      type=str,   default="exps/exp1", help='Path for model and logs')
 
 ## Training and test data
-parser.add_argument('--train_list',     type=str,   default="data/train_list.txt",  help='Train list')
-parser.add_argument('--test_list',      type=str,   default="data/test_list.txt",   help='Evaluation list')
-parser.add_argument('--train_path',     type=str,   default="data/voxceleb2", help='Absolute path to the train set')
-parser.add_argument('--test_path',      type=str,   default="data/voxceleb1", help='Absolute path to the test set')
+parser.add_argument('--train_list',     type=str,   default="data/MSV_CommonVoice_data/metadata/all_new_metadata2.txt",  help='Train list')
+parser.add_argument('--test_list',      type=str,   default="data/Test/veri_test2.txt",   help='Evaluation list')
+parser.add_argument('--train_path',     type=str,   default="/home2/vietvq/UNDERFITT/data/MSV_CommonVoice_data/", help='Absolute path to the train set')
+parser.add_argument('--test_path',      type=str,   default="data/Test/wav", help='Absolute path to the test set')
 parser.add_argument('--musan_path',     type=str,   default="data/musan_augment/", help='Absolute path to the test set')
 parser.add_argument('--rir_path',       type=str,   default="data/rirs_noises/", help='Absolute path to the test set')
+parser.add_argument('--output_path',    type=str,   default='output/submission/t1',     help='Output path for storing testing results')
 
 ## Model definition
 parser.add_argument('--n_mels',         type=int,   default=80,     help='Number of mel filterbanks')
@@ -85,6 +84,9 @@ parser.add_argument('--C',              type=int,   default=1024,   help='Channe
 
 ## For test only
 parser.add_argument('--eval',           dest='eval', action='store_true', help='Eval only')
+parser.add_argument('--test',           dest='test', action='store_true', help='Test only')
+parser.add_argument('--freeze',         dest='freeze', action='store_true')
+parser.add_argument('--unfreeze_embedding', dest='unfreeze_embedding', action='store_true')
 
 ## Distributed and mixed precision training
 parser.add_argument('--port',           type=str,   default="8888", help='Port for distributed training, input as text')
@@ -118,6 +120,7 @@ if args.config is not None:
 def main_worker(gpu, ngpus_per_node, args):
 
     args.gpu = gpu
+    torch.backends.cudnn.benchmark = True
 
     ## Load models
     s = SpeakerNet(**vars(args))
@@ -155,12 +158,42 @@ def main_worker(gpu, ngpus_per_node, args):
         batch_size=args.batch_size,
         num_workers=args.nDataLoaderThread,
         sampler=train_sampler,
-        pin_memory=False,
+        # shuffle=True,
+        pin_memory=True,
         worker_init_fn=worker_init_fn,
         drop_last=True,
     )
 
-    trainer     = ModelTrainer(s, **vars(args))
+    trainer = ModelTrainer(s, **vars(args))
+
+    if args.freeze:
+        model = trainer.__model__.module.__S__
+
+        if args.unfreeze_embedding:
+            for param in model.parameters():
+                param.requires_grad = False
+
+                model.fc6.weight.requires_grad = True
+                model.fc6.bias.requires_grad = True
+                model.bn6.weight.requires_grad = True
+                model.bn6.bias.requires_grad = True
+            
+            plist = [
+                {'params': model.fc6.parameters(), 'lr': 5e-6},
+                {'params': model.bn6.parameters(), 'lr': 5e-6},
+                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.0005}
+            ]
+        else:
+            plist = [
+                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.0005}
+            ]
+
+        Optimizer = importlib.import_module("optimizer." + args.optimizer).__getattribute__("Optimizer")
+        trainer.__optimizer__ = Optimizer(plist, **vars(args))
+
+        Scheduler = importlib.import_module("scheduler." + args.scheduler).__getattribute__("Scheduler")
+        del args.optimizer
+        trainer.__scheduler__, trainer.lr_step = Scheduler(trainer.__optimizer__, **vars(args))
 
     ## Load model weights
     modelfiles = glob.glob('%s/model0*.model'%args.model_save_path)
@@ -186,6 +219,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print('Test list',args.test_list)
         
         sc, lab, _ = trainer.evaluateFromList(**vars(args))
+        # sc, lab = trainer.eval_network(**vars(args))
 
         if args.gpu == 0:
 
@@ -195,38 +229,34 @@ def main_worker(gpu, ngpus_per_node, args):
 
         return
 
-    ## Save training code and params
-    if args.gpu == 0:
-        pyfiles = glob.glob('./*.py')
-        strtime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    # Test time
+    if args.test == True:
+        print('Test list', args.test_list)
 
-        zipf = zipfile.ZipFile(args.result_save_path+ '/run%s.zip'%strtime, 'w', zipfile.ZIP_DEFLATED)
-        for file in pyfiles:
-            zipf.write(file)
-        zipf.close()
+        trainer.test_from_list(**vars(args))
 
-        with open(args.result_save_path + '/run%s.cmd'%strtime, 'w') as f:
-            f.write('%s'%args)
+        return
 
     ## Core training script
     for it in range(it,args.max_epoch+1):
-
+        print(time.strftime("%Y-%m-%d %H:%M:%S"), "Epoch {:d}".format(it))
         train_sampler.set_epoch(it)
 
         clr = [x['lr'] for x in trainer.__optimizer__.param_groups]
 
-        loss, traineer = trainer.train_network(train_loader, verbose=(args.gpu == 0))
+        loss, train_eer = trainer.train_network(train_loader, verbose=(args.gpu == 0))
 
         if args.gpu == 0:
-            print(time.strftime("%Y-%m-%d %H:%M:%S"), "Epoch {:d}, TAcc/TERR {:2.2f}, TLOSS {:f}, LR {:f}".format(it, traineer, loss, max(clr)))
-            scorefile.write("Epoch {:d}, TAcc/TERR {:2.2f}, TLOSS {:f}, LR {:f} \n".format(it, traineer, loss, max(clr)))
+            print(time.strftime("%Y-%m-%d %H:%M:%S"), "Epoch {:d}, TAcc: {:2.2f}, TLOSS {:f}, LR {:f}".format(it, train_eer, loss, max(clr)))
+            scorefile.write("Epoch {:d}, TLOSS {:f}, TAcc {:2.2f}, LR {:f} \n".format(it, train_eer, loss, max(clr)))
 
         if it % args.test_interval == 0:
 
-            sc, lab, _ = trainer.evaluateFromList(**vars(args))
+            # sc, lab, _ = trainer.evaluateFromList(**vars(args))
+            sc, lab = trainer.eval_network(**vars(args))
 
             if args.gpu == 0:
-                
+
                 result = tuneThresholdfromScore(sc, lab, [1, 0.1])
 
                 # fnrs, fprs, thresholds = ComputeErrorRates(sc, lab)
