@@ -91,9 +91,9 @@ You need to change language in configuration file to cluster for each language
 ```
 python src/trainSpeakerNet.py --config src/configs/CNN_TDNN_AAM.yaml --freeze --initial_model output/ecapa/model/model000000034.model
 ```
-- Then, we fine-tune entire network with following script:
+- Then, we fine-tune entire network with small learning rate:
 ```
-python src/trainSpeakerNet.py --config src/configs/CNN_TDNN_AAM.yaml --initial_model model_checkpoint
+python src/trainSpeakerNet.py --config src/configs/CNN_TDNN_AAM.yaml --initial_model model_checkpoint --lr 0.0001
 ```
 ## Inference
 
