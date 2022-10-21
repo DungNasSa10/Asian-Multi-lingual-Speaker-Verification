@@ -1,13 +1,9 @@
-#!/usr/bin/python
-#-*- coding: utf-8 -*-
-
 import sys, time, os, argparse
-from sklearn.utils import shuffle
 import yaml
 import torch
 import glob
 import warnings
-from tuneThreshold import *
+from utils import *
 from SpeakerNet import *
 from DatasetLoader import *
 import torch.distributed as dist
@@ -39,7 +35,7 @@ parser.add_argument('--trainfunc',      type=str,   default="",     help='Loss f
 ## Optimizer
 parser.add_argument('--optimizer',      type=str,   default="adam", help='sgd or adam')
 parser.add_argument('--scheduler',      type=str,   default="steplr", help='Learning rate scheduler')
-parser.add_argument('--lr',             type=float, default=0.0005,  help='Learning rate')
+parser.add_argument('--lr',             type=float, default=0.001,  help='Learning rate')
 parser.add_argument("--lr_decay",       type=float, default=0.95,   help='Learning rate decay every [lr_step] epochs')
 parser.add_argument('--weight_decay',   type=float, default=2e-5,      help='Weight decay in the optimizer')
 parser.add_argument('--lr_step',        type=int,   default=2,      help='Step for learning rate decay')
@@ -181,11 +177,11 @@ def main_worker(gpu, ngpus_per_node, args):
             plist = [
                 {'params': model.fc6.parameters(), 'lr': 5e-6},
                 {'params': model.bn6.parameters(), 'lr': 5e-6},
-                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.0005}
+                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.001}
             ]
         else:
             plist = [
-                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.0005}
+                {'params': trainer.__model__.module.__L__.parameters(), 'lr': 0.001}
             ]
 
         Optimizer = importlib.import_module("optimizer." + args.optimizer).__getattribute__("Optimizer")
@@ -218,8 +214,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print('Total parameters: ',pytorch_total_params)
         print('Test list',args.test_list)
         
-        sc, lab, _ = trainer.evaluateFromList(**vars(args))
-        # sc, lab = trainer.eval_network(**vars(args))
+        sc, lab = trainer.eval_network(**vars(args))
 
         if args.gpu == 0:
 

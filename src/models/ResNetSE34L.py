@@ -1,12 +1,9 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
 import torch
 import torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Parameter
 from models.ResNetBlocks import *
+
 
 class ResNetSE(nn.Module):
     def __init__(self, block, layers, num_filters, nOut, encoder_type='SAP', n_mels=40, log_input=True, **kwargs):
@@ -118,4 +115,5 @@ def MainModel(nOut=256, **kwargs):
     # Number of filters
     num_filters = [16, 32, 64, 128]
     model = ResNetSE(SEBasicBlock, [3, 4, 6, 3], num_filters, nOut, **kwargs)
+    
     return model

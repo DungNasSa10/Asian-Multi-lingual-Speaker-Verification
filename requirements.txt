@@ -6,3 +6,5 @@ scipy
 tqdm
 soundfile
 scikit-learn
+asteroid-filterbanks
+pyyaml

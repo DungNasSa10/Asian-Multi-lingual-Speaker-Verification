@@ -10,7 +10,6 @@ class SEModule(nn.Module):
             nn.AdaptiveAvgPool1d(1),
             nn.Conv1d(channels, bottleneck, kernel_size=1, padding=0),
             nn.ReLU(),
-            # nn.BatchNorm1d(bottleneck), # I remove this layer
             nn.Conv1d(bottleneck, channels, kernel_size=1, padding=0),
             nn.Sigmoid(),
             )
@@ -18,6 +17,7 @@ class SEModule(nn.Module):
     def forward(self, input):
         x = self.se(input)
         return input * x
+
 
 class Bottle2neck(nn.Module):
 
@@ -70,6 +70,7 @@ class Bottle2neck(nn.Module):
         out += residual
         return out 
 
+
 class PreEmphasis(torch.nn.Module):
 
     def __init__(self, coef: float = 0.97):
@@ -83,6 +84,7 @@ class PreEmphasis(torch.nn.Module):
         input = input.unsqueeze(1)
         input = F.pad(input, (1, 0), 'reflect')
         return F.conv1d(input, self.flipped_filter).squeeze(1)
+
 
 class FbankAug(nn.Module):
 
@@ -119,6 +121,7 @@ class FbankAug(nn.Module):
         x = self.mask_along_axis(x, dim=2)
         x = self.mask_along_axis(x, dim=1)
         return x
+
 
 class ECAPA_TDNN(nn.Module):
 
@@ -189,6 +192,7 @@ class ECAPA_TDNN(nn.Module):
         x = self.bn6(x)
 
         return x
+
 
 def MainModel(**kwargs):
     model = ECAPA_TDNN(C=1024)

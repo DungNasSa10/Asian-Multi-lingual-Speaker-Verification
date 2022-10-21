@@ -6,4 +6,4 @@ save_path: output/self_contrastive
 train_list: data/MSV_Youtube_data/youtube_metadata.txt
 train_path: data/MSV_Youtube_data
 test_list: data/Test/eval_list.tsv
-test_path: data/MSV_CommonVoice_data/vi/clips/
+test_path: data/MSV_CommonVoice_data/vi/clips

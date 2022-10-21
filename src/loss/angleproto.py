@@ -1,10 +1,7 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import time, pdb, numpy
+import numpy as np
 from utils import accuracy
 
 class LossFunction(nn.Module):
@@ -32,8 +29,8 @@ class LossFunction(nn.Module):
         torch.clamp(self.w, 1e-6)
         cos_sim_matrix = cos_sim_matrix * self.w + self.b
         
-        label   = torch.from_numpy(numpy.asarray(range(0,stepsize))).cuda()
+        label   = torch.from_numpy(np.asarray(range(0,stepsize))).cuda()
         nloss   = self.criterion(cos_sim_matrix, label)
-        # prec1   = accuracy(cos_sim_matrix.detach(), label.detach(), topk=(1,))[0]
+        prec1   = accuracy(cos_sim_matrix.detach(), label.detach(), topk=(1,))[0]
 
-        return nloss
+        return nloss, prec1

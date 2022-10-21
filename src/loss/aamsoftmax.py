@@ -1,11 +1,7 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-# Adapted from https://github.com/wujiyang/Face_Pytorch (Apache License)
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import time, pdb, numpy, math
+import math
 from utils import accuracy
 
 class LossFunction(nn.Module):
@@ -17,9 +13,9 @@ class LossFunction(nn.Module):
         self.m = margin
         self.s = scale
         self.in_feats = nOut
-        self.weight = torch.nn.Parameter(torch.FloatTensor(nClasses, nOut), requires_grad=True)
+        self.w = torch.nn.Parameter(torch.FloatTensor(nClasses, nOut), requires_grad=True)
         self.ce = nn.CrossEntropyLoss()
-        nn.init.xavier_normal_(self.weight, gain=1)
+        nn.init.xavier_normal_(self.w, gain=1)
 
         self.easy_margin = easy_margin
         self.cos_m = math.cos(self.m)
@@ -37,7 +33,7 @@ class LossFunction(nn.Module):
         assert x.size()[1] == self.in_feats
         
         # cos(theta)
-        cosine = F.linear(F.normalize(x), F.normalize(self.weight))
+        cosine = F.linear(F.normalize(x), F.normalize(self.w))
         # cos(theta + m)
         sine = torch.sqrt((1.0 - torch.mul(cosine, cosine)).clamp(0, 1))
         phi = cosine * self.cos_m - sine * self.sin_m

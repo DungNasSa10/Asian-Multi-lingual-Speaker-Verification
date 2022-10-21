@@ -1,11 +1,6 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-# Adapted from https://github.com/CoinCheung/pytorch-loss (MIT License)
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import time, pdb, numpy
 from utils import accuracy
 
 class LossFunction(nn.Module):
@@ -34,12 +29,19 @@ class LossFunction(nn.Module):
         w_norm = torch.div(self.W, w_norm)
         costh = torch.mm(x_norm, w_norm)
         label_view = label.view(-1, 1)
-        if label_view.is_cuda: label_view = label_view.cpu()
+
+        if label_view.is_cuda: 
+            label_view = label_view.cpu()
+
         delt_costh = torch.zeros(costh.size()).scatter_(1, label_view, self.m)
-        if x.is_cuda: delt_costh = delt_costh.cuda()
+
+        if x.is_cuda: 
+            delt_costh = delt_costh.cuda()
+            
         costh_m = costh - delt_costh
         costh_m_s = self.s * costh_m
         loss    = self.ce(costh_m_s, label)
         prec1   = accuracy(costh_m_s.detach(), label.detach(), topk=(1,))[0]
+        
         return loss, prec1
 

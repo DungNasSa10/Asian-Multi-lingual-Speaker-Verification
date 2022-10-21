@@ -1,11 +1,9 @@
 from copy import deepcopy
 from functools import wraps
-
 import torch
 from torch import nn
 import torch.nn.functional as F
 
-from torchvision import transforms as T
 
 # helper functions
 
@@ -239,4 +237,5 @@ class BYOL(nn.Module):
         loss_two = loss_fn(online_pred_two, target_proj_one.detach())
 
         loss = loss_one + loss_two
+        
         return loss.mean()

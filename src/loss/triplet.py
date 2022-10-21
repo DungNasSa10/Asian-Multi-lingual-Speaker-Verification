@@ -1,10 +1,7 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import time, pdb, numpy
+import numpy as np
 from tuneThreshold import tuneThresholdfromScore
 import random
 
@@ -35,7 +32,7 @@ class LossFunction(nn.Module):
 
         out_negative = out_positive[negidx,:]
 
-        labelnp     = numpy.array([1]*len(out_positive)+[0]*len(out_negative))
+        labelnp     = np.array([1]*len(out_positive)+[0]*len(out_negative))
 
         ## calculate distances
         pos_dist    = F.pairwise_distance(out_anchor,out_positive)

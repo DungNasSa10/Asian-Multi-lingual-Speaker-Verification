@@ -1,9 +1,7 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
 import torch
 
-def Scheduler(optimizer, lr_step, lr_decay, **kwargs):
+
+def Scheduler(optimizer, lr_decay, lr_step=1, **kwargs):
 
 	sche_fn = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_step, gamma=lr_decay)
 

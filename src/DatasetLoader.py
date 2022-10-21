@@ -1,22 +1,20 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
-import torch, torchaudio
-import numpy
+import torch
+import numpy as np
 import random
 import os
 import glob
 import tqdm
 import soundfile, librosa
 from scipy import signal
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torch.distributed as dist
+
 
 def round_down(num, divisor):
 	return num - (num%divisor)
 
 def worker_init_fn(worker_id):
-	numpy.random.seed(numpy.random.get_state()[1][0] + worker_id)
+	np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
 def loadWAV(filename, max_frames, evalmode=True, num_eval=10):
@@ -31,13 +29,13 @@ def loadWAV(filename, max_frames, evalmode=True, num_eval=10):
 
 	if audiosize <= max_audio:
 		shortage    = max_audio - audiosize + 1 
-		audio       = numpy.pad(audio, (0, shortage), 'wrap')
+		audio       = np.pad(audio, (0, shortage), 'wrap')
 		audiosize   = audio.shape[0]
 
 	if evalmode:
-		startframe = numpy.linspace(0,audiosize-max_audio, num=num_eval)
+		startframe = np.linspace(0,audiosize-max_audio, num=num_eval)
 	else:
-		startframe = numpy.array([numpy.int64(random.random()*(audiosize-max_audio))])
+		startframe = np.array([np.int64(random.random()*(audiosize-max_audio))])
 	
 	feats = []
 	if evalmode and max_frames == 0:
@@ -46,10 +44,11 @@ def loadWAV(filename, max_frames, evalmode=True, num_eval=10):
 		for asf in startframe:
 			feats.append(audio[int(asf):int(asf)+max_audio])
 
-	feat = numpy.stack(feats,axis=0).astype(numpy.float)
+	feat = np.stack(feats,axis=0).astype(np.float)
 
 	return feat
 	
+
 class AugmentWAV(object):
 
 	def __init__(self, musan_path, rir_path, max_frames):
@@ -80,42 +79,42 @@ class AugmentWAV(object):
 			for noise in tqdm.tqdm(self.noiselist[noisecat]):
 				noiseaudio  = loadWAV(noise, self.max_frames, evalmode=False)
 				noise_snr   = random.uniform(self.noisesnr[noisecat][0],self.noisesnr[noisecat][1])
-				noise_db = 10 * numpy.log10(numpy.mean(noiseaudio[0] ** 2) + 1e-4)
+				noise_db = 10 * np.log10(np.mean(noiseaudio[0] ** 2) + 1e-4)
 				self.encoded_audio[noisecat].append((noise_db, noise_snr, noiseaudio))
 
 	def additive_noise(self, noisecat, audio):
 
-		clean_db    = 10 * numpy.log10(numpy.mean(audio ** 2)+1e-4)
+		clean_db    = 10 * np.log10(np.mean(audio ** 2)+1e-4)
 
 		numnoise    = self.numnoise[noisecat]
 		noiselist   = random.sample(self.encoded_audio[noisecat], random.randint(numnoise[0], numnoise[1]))
 		noises = []
 		for noise in noiselist:
-			noises.append(numpy.sqrt(10 ** ((clean_db - noise[0] - noise[1]) / 10)) * noise[2])
+			noises.append(np.sqrt(10 ** ((clean_db - noise[0] - noise[1]) / 10)) * noise[2])
 
-		noise = numpy.sum(numpy.concatenate(noises,axis=0),axis=0,keepdims=True)
+		noise = np.sum(np.concatenate(noises,axis=0),axis=0,keepdims=True)
 		return noise + audio
 
 	def reverberate(self, audio):
 
 		rir_file    = random.choice(self.rir_files)
 		rir, sr     = librosa.load(rir_file, sr=None, mono=True)
-		rir         = numpy.expand_dims(rir.astype(numpy.float),0)
-		rir         = rir / numpy.sqrt(numpy.sum(rir**2))
+		rir         = np.expand_dims(rir.astype(np.float),0)
+		rir         = rir / np.sqrt(np.sum(rir**2))
 
 		return signal.convolve(audio, rir, mode='full')[:,:self.max_audio]
 
 	def forward(self, audio):
 		if isinstance(audio, torch.Tensor):
-			numpy_audio = audio.cpu().numpy()
+			np_audio = audio.cpu().np()
 		augtype = random.randint(1, 3)
 
 		if augtype   == 1:
-			new_audio   = self.reverberate(numpy_audio)
+			new_audio   = self.reverberate(np_audio)
 		elif augtype == 2: 
-			new_audio   = self.additive_noise('music', numpy_audio)
+			new_audio   = self.additive_noise('music', np_audio)
 		elif augtype == 3:
-			new_audio   = self.additive_noise('noise', numpy_audio)
+			new_audio   = self.additive_noise('noise', np_audio)
 
 		return torch.FloatTensor(new_audio)
 
@@ -180,10 +179,12 @@ class train_dataset_loader(Dataset):
 					
 			feat.append(audio)
 
-		feat = numpy.concatenate(feat, axis=0)
+		feat = np.concatenate(feat, axis=0)
 
 		return torch.FloatTensor(feat), self.data_label[index]
 
+	# Used for finetuning each language
+	
 	# def __getitem__(self, index):
 			
 	# 	audio = loadWAV(self.data_list[index], self.max_frames, evalmode=False)
@@ -209,7 +210,6 @@ class train_dataset_loader(Dataset):
 
 	def __len__(self):
 		return len(self.data_list)
-
 
 
 class test_dataset_loader(Dataset):
@@ -266,7 +266,7 @@ class train_dataset_sampler(torch.utils.data.Sampler):
 			data    = data_dict[key]
 			numSeg  = round_down(min(len(data), self.max_seg_per_spk), self.nPerSpeaker)
 			
-			rp      = lol(numpy.arange(numSeg), self.nPerSpeaker)
+			rp      = lol(np.arange(numSeg), self.nPerSpeaker)
 			flattened_label.extend([findex] * (len(rp)))
 			for indices in rp:
 				flattened_list.append([data[i] for i in indices])

@@ -1,10 +1,7 @@
-# -*- encoding: utf-8 -*-
-
 import torch
 import torch.nn as nn
 from asteroid_filterbanks import Encoder, ParamSincFB
-
-from models.RawNetBasicBlock import Bottle2neck, PreEmphasis
+from RawNetBasicBlock import Bottle2neck, PreEmphasis
 
 
 class RawNet3(nn.Module):
@@ -138,7 +135,6 @@ class RawNet3(nn.Module):
 
 def MainModel(**kwargs):
 
-    model = RawNet3(
-        Bottle2neck, model_scale=8, context=True, summed=True, out_bn=False, log_sinc=True, norm_sinc="mean", grad_mult=1, **kwargs
-    )
+    model = RawNet3(Bottle2neck, model_scale=8, context=True, summed=True, out_bn=False, log_sinc=True, norm_sinc="mean", grad_mult=1, **kwargs)
+    
     return model

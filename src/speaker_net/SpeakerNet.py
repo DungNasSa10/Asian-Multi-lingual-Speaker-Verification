@@ -1,21 +1,17 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy, sys, random
-import time, itertools, importlib
-
 from DatasetLoader import test_dataset_loader
 from torch.cuda.amp import autocast, GradScaler
 
+import numpy, sys, random
+import time, itertools, importlib
 from scipy.spatial.distance import cdist
 import numpy as np
-
 import tqdm, soundfile, os
 
 from models.ECAPA_TDNN import ECAPA_TDNN
+
 
 class WrappedModel(nn.Module):
 
@@ -130,13 +126,61 @@ class ModelTrainer(object):
             self.__scheduler__.step()
 
         return (loss / counter, top1 / counter)
-        # return loss / counter
 
     ## ===== ===== ===== ===== ===== ===== ===== =====
     ## Evaluate from list
     ## ===== ===== ===== ===== ===== ===== ===== =====
 
-    def evaluateFromList(self, test_list, test_path, nDataLoaderThread, distributed=False, num_eval=10, **kwargs):
+    def eval_network(self, test_list, test_path, **kwargs):
+        self.__model__.eval()
+        files = []
+        embeddings = {}
+        lines = open(test_list).read().splitlines()
+        for line in lines:
+            files.append(line.split()[1])
+            files.append(line.split()[2])
+        setfiles = list(set(files))
+        setfiles.sort()
+
+        for idx, file in tqdm.tqdm(enumerate(setfiles), total = len(setfiles)):
+            audio, _  = soundfile.read(os.path.join(test_path, file))
+            # Full utterance
+            data_1 = torch.FloatTensor(numpy.stack([audio],axis=0)).cuda()
+
+            # Splited utterance matrix
+            max_audio = 300 * 160 + 240
+            if audio.shape[0] <= max_audio:
+                shortage = max_audio - audio.shape[0]
+                audio = numpy.pad(audio, (0, shortage), 'wrap')
+            feats = []
+            startframe = numpy.linspace(0, audio.shape[0]-max_audio, num=5)
+            for asf in startframe:
+                feats.append(audio[int(asf):int(asf)+max_audio])
+            feats = numpy.stack(feats, axis = 0).astype(numpy.float)
+            data_2 = torch.FloatTensor(feats).cuda()
+            # Speaker embeddings
+            with torch.no_grad():
+                embedding_1 = self.__model__(data_1)
+                embedding_1 = F.normalize(embedding_1, p=2, dim=1)
+                embedding_2 = self.__model__(data_2)
+                embedding_2 = F.normalize(embedding_2, p=2, dim=1)
+            embeddings[file] = [embedding_1, embedding_2]
+        scores, labels  = [], []
+
+        for line in lines:			
+            embedding_11, embedding_12 = embeddings[line.split()[1]]
+            embedding_21, embedding_22 = embeddings[line.split()[2]]
+            # Compute the scores
+            score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T)) # higher is positive
+            score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
+            score = (score_1 + score_2) / 2
+            score = score.detach().cpu().numpy()
+            scores.append(score)
+            labels.append(int(line.split()[0]))
+
+        return scores, labels
+
+    def eval_network_1(self, test_list, test_path, nDataLoaderThread, distributed=False, num_eval=10, **kwargs):
 
         if distributed:
             rank = torch.distributed.get_rank()
@@ -215,14 +259,17 @@ class ModelTrainer(object):
 
         return all_scores, all_labels
 
-    def eval_network(self, test_list, test_path, **kwargs):
+    def test_from_list(self, test_list, test_path, output_path, **kwargs):
         self.__model__.eval()
         files = []
+        filename = test_list.split("/")[-1]
+        f_write = open(os.path.join(output_path, filename), "w")
         embeddings = {}
         lines = open(test_list).read().splitlines()
+        
         for line in lines:
+            files.append(line.split()[0])
             files.append(line.split()[1])
-            files.append(line.split()[2])
         setfiles = list(set(files))
         setfiles.sort()
 
@@ -249,22 +296,21 @@ class ModelTrainer(object):
                 embedding_2 = self.__model__(data_2)
                 embedding_2 = F.normalize(embedding_2, p=2, dim=1)
             embeddings[file] = [embedding_1, embedding_2]
-        scores, labels  = [], []
 
         for line in lines:			
-            embedding_11, embedding_12 = embeddings[line.split()[1]]
-            embedding_21, embedding_22 = embeddings[line.split()[2]]
+            embedding_11, embedding_12 = embeddings[line.split()[0]]
+            embedding_21, embedding_22 = embeddings[line.split()[1]]
             # Compute the scores
             score_1 = torch.mean(torch.matmul(embedding_11, embedding_21.T)) # higher is positive
             score_2 = torch.mean(torch.matmul(embedding_12, embedding_22.T))
             score = (score_1 + score_2) / 2
             score = score.detach().cpu().numpy()
-            scores.append(score)
-            labels.append(int(line.split()[0]))
+            
+            f_write.write(line.split()[0] + '\t' + line.split()[1] + '\t' + str(score) + '\n')
 
-        return scores, labels
+        f_write.close()
 
-    def test_from_list(self, test_list, test_path, output_path, nDataLoaderThread, num_eval=10, **kwargs):
+    def test_from_list_1(self, test_list, test_path, output_path, nDataLoaderThread, num_eval=10, **kwargs):
         self.__model__.eval()
 
         filename = test_list.split("/")[-1]

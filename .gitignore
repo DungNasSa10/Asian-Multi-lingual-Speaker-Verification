@@ -130,3 +130,6 @@ dmypy.json
 
 # Data folder
 /data/
+
+# Output folder
+/output/

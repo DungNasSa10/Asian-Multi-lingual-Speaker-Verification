@@ -1,0 +1,14 @@
+model: ECAPA_TDNN
+C: 1024
+nOut: 192
+nClasses: 96
+batch_size: 16
+trainfunc: cosinemargin
+max_seg_per_spk: 10000
+augment: True
+max_epoch: 50
+save_path: output/vietnam_finetune
+train_list: data/MSV_CommonVoice_data/metadata/train_list_vi.txt
+train_path: data/MSV_CommonVoice_data/vi/clips
+test_list: data/Test/new_vietnam_public_pairs.csv
+test_path: data/Vietnam_Test

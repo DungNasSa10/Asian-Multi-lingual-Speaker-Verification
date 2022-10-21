@@ -1,9 +1,7 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
 import torch
 
-def Optimizer(parameters, lr, weight_decay, **kwargs):
+
+def Optimizer(parameters, lr=0.001, weight_decay=2e-5, **kwargs):
 
 	print('Initialised Adam optimizer')
 

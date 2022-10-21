@@ -1,7 +1,3 @@
-#! /usr/bin/python
-# -*- encoding: utf-8 -*-
-
-import torch
 import torch.nn as nn
 import loss.softmax as softmax
 import loss.angleproto as angleproto

@@ -6,8 +6,8 @@ import yaml
 import torch
 import glob
 import warnings
-from SpeakerNet import *
-from tuneThreshold import *
+from speaker_net.SpeakerNet import *
+from utils import *
 from DatasetLoader import *
 from byol import *
 warnings.simplefilter("ignore")
