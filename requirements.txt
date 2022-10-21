@@ -8,3 +8,4 @@ soundfile
 scikit-learn
 asteroid-filterbanks
 pyyaml
+speechbrain

@@ -6,7 +6,7 @@ import yaml
 import torch
 import glob
 import warnings
-from speaker_net.SpeakerNet import *
+from SpeakerNet import *
 from utils import *
 from DatasetLoader import *
 from byol import *

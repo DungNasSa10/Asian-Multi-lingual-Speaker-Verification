@@ -2,7 +2,7 @@ import pandas as pd
 import yaml, pickle
 import argparse, warnings
 from sklearn.metrics.pairwise import cosine_similarity as cs_sklearn
-from speaker_net.SpeakerNet import *
+from SpeakerNet import *
 
 
 parser = argparse.ArgumentParser(description = "Asnorm")

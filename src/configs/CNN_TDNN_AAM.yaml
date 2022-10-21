@@ -3,14 +3,14 @@ C: 1024
 nOut: 192
 nClasses: 17714
 batch_size: 64
-trainfunc: cosinemargin
+trainfunc: aamsoftmax
 max_seg_per_spk: 200
 augment: True
-max_epoch: 20
-save_path: output/ecapa_2
+max_epoch: 100
+save_path: output/ecapa
 train_list: data/MSV_CommonVoice_data/metadata/all_new_metadata.txt
 train_path: data/MSV_CommonVoice_data
-test_list: data/public_test/test_pairs/sample-t01/vietnam_public_pairs.csv
-test_path: data/public_test/public-t01/Vietnam_Test
+test_list: data/Test/veri_test2.txt
+test_path: data/Test/wav
 output_path: output/submission/t1
-lr: 0.0001
+# lr: 0.00001

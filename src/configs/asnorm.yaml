@@ -3,7 +3,6 @@ nOut: 192
 nClasses: 17714
 batch_size: 32
 trainfunc: aamsoftmax
-initial_model: output/ecapa/model/model000000034.model
 # Change language here
 embedding_file_path: output/embedding_data/vietnam_private_embeddings_file.pickle
 embedding_full_file_path: output/embedding_data/vietnam_private_embeddings_full_file.pickle
