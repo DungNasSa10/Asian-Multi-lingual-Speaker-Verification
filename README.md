@@ -111,5 +111,5 @@ python src/asnorm.py --config src/configs/asnorm.yaml --initial_model model_chec
 ### PLDA
 
 ```
-python plda_score.py --config src/configs/CNN_TDNN_AAM.yaml --initial_model model_checkpoint --test
+python plda_score.py --config src/configs/CNN_TDNN_AAM.yaml --initial_model model_checkpoint
 ```
