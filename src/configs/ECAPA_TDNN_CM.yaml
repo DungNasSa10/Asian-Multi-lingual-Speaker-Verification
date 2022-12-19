@@ -10,7 +10,7 @@ max_epoch: 100
 save_path: output/ecapa
 train_list: data/MSV_CommonVoice_data/metadata/all_new_metadata.txt
 train_path: data/MSV_CommonVoice_data
-test_list: data/private_test/amsv-private-test/test_pairs/sample_t1/vietnam_private_pairs.csv
-test_path: data/private_test/amsv-private-test/t1/Vietnam_Test
+test_list: data/Test/veri_test2.txt
+test_path: data/Test/wav
 output_path: output/submission/t1/private_test
 # lr: 0.00001

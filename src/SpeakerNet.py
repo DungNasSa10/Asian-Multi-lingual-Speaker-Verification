@@ -40,10 +40,10 @@ class SpeakerNet(nn.Module):
     def forward(self, data, label=None):
 
         data = data.reshape(-1, data.size()[-1]).cuda()
-        if isinstance(self.__S__, ECAPA_TDNN):
-            outp = self.__S__.forward(data, aug=True)
-        else:
-            outp = self.__S__.forward(data)
+        # if isinstance(self.__S__, ECAPA_TDNN):
+        #     outp = self.__S__.forward(data, aug=True)
+        # else:
+        outp = self.__S__.forward(data)
 
         if label == None:
             return outp
