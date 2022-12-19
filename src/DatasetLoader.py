@@ -144,7 +144,7 @@ class train_dataset_loader(Dataset):
 		self.data_label = []
 		
 		for lidx, line in enumerate(lines):
-			data = line.strip("\t").split()
+			data = line.strip().split("\t")
 
 			speaker_label = dictkeys[data[0]]
 			filename = os.path.join(train_path,data[1])
