@@ -1,5 +1,5 @@
 import torch
-import math, torch, torchaudio
+import torch, torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
 from ECAPA_TDNN import SEModule, Bottle2neck, PreEmphasis, FbankAug

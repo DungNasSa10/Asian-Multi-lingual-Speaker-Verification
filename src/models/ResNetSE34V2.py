@@ -2,7 +2,7 @@ import torch
 import torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
-from ResNetBlocks import *
+from .ResNetBlocks import *
 
 
 class ResNetSE(nn.Module):
