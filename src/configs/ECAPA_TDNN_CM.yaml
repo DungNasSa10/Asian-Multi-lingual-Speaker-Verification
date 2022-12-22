@@ -1,16 +1,18 @@
 model: ECAPA_TDNN
 C: 1024
 nOut: 192
-nClasses: 17714
+nClasses: 1015
 batch_size: 64
-trainfunc: cosinemargin
-max_seg_per_spk: 200
+trainfunc: aamsoftmax
+max_seg_per_spk: 1000
 augment: True
 max_epoch: 100
-save_path: output/ecapa
-train_list: data/MSV_CommonVoice_data/metadata/all_new_metadata.txt
-train_path: data/MSV_CommonVoice_data
-test_list: data/Test/veri_test2.txt
-test_path: data/Test/wav
+save_path: output/test
+train_list: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1/data/metadata/train/training_metadata.txt
+train_path: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1
+test_list: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1/data/metadata/test/labels/public_test_pairs_with_label.txt
+test_path: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1/data/test/sv_vlsp_2021/public_test/competition_public_test
+musan_path: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1/data/musan_augment
+rir_path: /home/dungnasa/Desktop/Coding/Python/Deep-Learning-Project-2022-1/data/rirs_noises
 output_path: output/submission/t1/private_test
 # lr: 0.00001

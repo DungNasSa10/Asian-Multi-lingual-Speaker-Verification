@@ -2,7 +2,7 @@ import torch
 import torch, torchaudio
 import torch.nn as nn
 import torch.nn.functional as F
-from ECAPA_TDNN import SEModule, Bottle2neck, PreEmphasis, FbankAug
+from .ECAPA_TDNN import Bottle2neck, PreEmphasis, FbankAug
 
 
 class ResBlock(nn.Module):
