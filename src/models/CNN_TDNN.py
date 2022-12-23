@@ -89,7 +89,7 @@ class CNN_TDNN(nn.Module):
 		self.bn6 = nn.BatchNorm1d(192)
 
 
-	def forward(self, x, aug):
+	def forward(self, x, aug=False):
 		with torch.no_grad():
 			x = self.torchfbank(x)+1e-6
 			# print('fbank: ', x.shape)
