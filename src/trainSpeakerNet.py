@@ -79,6 +79,7 @@ parser.add_argument('--sinc_stride',    type=int,   default=10,     help='Stride
 parser.add_argument('--C',              type=int,   default=1024,   help='Channel size for the speaker encoder (ECAPA_TDNN)')
 
 ## For test only
+parser.add_argument('--train',           dest='train', action='store_true', help='Train only')
 parser.add_argument('--eval',           dest='eval', action='store_true', help='Eval only')
 parser.add_argument('--test',           dest='test', action='store_true', help='Test only')
 parser.add_argument('--freeze',         dest='freeze', action='store_true')
@@ -144,21 +145,22 @@ def main_worker(gpu, ngpus_per_node, args):
         ## Write args to scorefile
         scorefile   = open(args.result_save_path+"/scores.txt", "a+")
 
+    if args.train:
     ## Initialise trainer and data loader
-    train_dataset = train_dataset_loader(**vars(args))
+        train_dataset = train_dataset_loader(**vars(args))
 
-    train_sampler = train_dataset_sampler(train_dataset, **vars(args))
+        train_sampler = train_dataset_sampler(train_dataset, **vars(args))
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.nDataLoaderThread,
-        sampler=train_sampler,
-        # shuffle=True,
-        pin_memory=True,
-        worker_init_fn=worker_init_fn,
-        drop_last=True,
-    )
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            num_workers=args.nDataLoaderThread,
+            sampler=train_sampler,
+            # shuffle=True,
+            pin_memory=True,
+            worker_init_fn=worker_init_fn,
+            drop_last=True,
+        )
 
     trainer = ModelTrainer(s, **vars(args))
 
@@ -203,7 +205,7 @@ def main_worker(gpu, ngpus_per_node, args):
         print("Model {} loaded from previous state!".format(modelfiles[-1]))
         it = int(os.path.splitext(os.path.basename(modelfiles[-1]))[0][5:]) + 1
 
-    for ii in range(1,it):
+    for ii in range(1, it):
         trainer.__scheduler__.step()
 
     ## Evaluation code - must run on single GPU
