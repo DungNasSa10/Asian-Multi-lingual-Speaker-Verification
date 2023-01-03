@@ -1,7 +1,7 @@
 # **Asian-Multi-lingual-Speaker-Verification**
 
 
-This is our solution (No_Train_No_Gain team) for task T01 and T02 in O-COCOSDA and VLSP 2022 - A-MSV Shared task: Asian Multilingual Speaker Verification (Top 2 Private test in both tasks).
+This is No_Train_No_Gain team's solution for task T01 and T02 in O-COCOSDA and VLSP 2022 - A-MSV Shared task: Asian Multilingual Speaker Verification (Top 2 Private test in both tasks).
 
 ## **Installation**
 
